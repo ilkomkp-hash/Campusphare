@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Campusphere</title>
+<link rel="icon" href="LogoCampusphare.ico">
+<style>
+body {
+    font-family: Arial; background: #eaeff3; margin: 0; 
+}
+.container { 
+    max-width: 480px; margin: 20px auto; background: white; padding: 15px; border-radius: 10px; 
+}
+.hidden { 
+    display: none; 
+}
+input, select, button { 
+    width: 100%; padding: 10px; margin: 5px 0; 
+}
+button { 
+    background: #2e86de; color: white; border: none; border-radius: 5px; 
+}
+button.back { 
+    background: #7f8c8d; 
+}
+button.danger { 
+    background: #c0392b; 
+}
+.chat-box { 
+    height: 300px; overflow-y: auto; background: #f7f9fa; padding: 10px; border-radius: 5px; 
+}
+.msg { 
+    max-width: 75%; padding: 8px 12px; margin: 6px 0; border-radius: 10px; clear: both; font-size: 14px; 
+}
+.msg.me { 
+    background: #2e86de; color: white; float: right; 
+}
+.msg.other { 
+    background: #ecf0f1; float: left; 
+}
+.time { 
+    font-size: 10px; opacity: .7; text-align: right; 
+}
+.chat-list-item { 
+    padding: 10px; border-bottom: 1px solid #ccc; cursor: pointer; 
+}
+.chat-list-item b { 
+    font-size: 14px; 
+}
+.chat-list-item span { 
+    font-size: 12px; color: #555; 
+}
+#providerList div { 
+    transition: background 0.2s; 
+}
+#tengah{
+    text-align: center;
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="container" id="loginPage">
+    <h3 id="tengah">Campusphere</h3>
+    <input id="loginUsername" placeholder="Masukan Username">
+    <input id="loginPassword" type="password" placeholder="Masukan Password">
+    <button onclick="login()">Login</button>
+    <p><a href="#" onclick="showRegister()">Buat Akun</a></p>
+</div>
+
+<!-- REGISTER -->
+<div class="container hidden" id="registerPage">
+    <h3>Buat Akun</h3>
+    <input id="regUsername" placeholder="Username">
+    <input id="regPassword" type="password" placeholder="Password">
+    <input id="regProdi" placeholder="Prodi">
+    <input id="regAngkatan" placeholder="Angkatan">
+    <select id="regRole">
+        <option value="pencari">Pencari Jasa</option>
+        <option value="penyedia">Penyedia Jasa</option>
+    </select>
+    <button onclick="register()">Daftar</button>
+    <button class="back" onclick="goBack()">⬅ Kembali</button>
+</div>
+
+<!-- DASHBOARD -->
+<div class="container hidden" id="dashboard">
+    <h3 id="tengah">Campusphere</h3>
+    <button onclick="showAcara()">🎓 Pilih Acara</button>
+    <button onclick="showChatList()">💬 Daftar Chat</button>
+    <button onclick="loadHistory(); navigate('historyPage')">
+    📜 Riwayat Transaksi</button>
+    <button onclick="showProfile()">👤 Profil</button>
+    <button onclick="logout()"><span id="merah">🚪 Keluar</span></button>
+</div>
+
+<!-- ACARA & PILIH PENYEDIA -->
+<div class="container hidden" id="acaraPage">
+    <h3>Pilih Acara</h3>
+    <select id="acara" onchange="loadProviderList()">
+        <option>Seminar Kampus</option>
+        <option>Dies Natalis</option>
+        <option>Konferensi Ilmiah</option>
+        <option>Pentas Seni</option>
+        <option>Workshop</option>
+        <option>Webinar</option>
+        <option>Kuliah Umum</option>
+    </select>
+
+    <select id="jasa" onchange="loadProviderList()">
+        <option>MC</option>
+        <option>Humas</option>
+        <option>Dekorasi</option>
+        <option>Catering</option>
+        <option>Fotografi</option>
+        <option>Sound System</option>
+        <option>EO Lengkap</option>
+        <option>Lainnya</option>
+    </select>
+
+    <h4>Penyedia Jasa:</h4>
+    <div id="providerList"></div>
+
+    <button onclick="startChatWithProvider()">Mulai Chat</button>
+    <button class="back" onclick="goBack()">⬅ Kembali</button>
+</div>
+
+<!-- CHAT LIST -->
+<div class="container hidden" id="chatListPage">
+    <h3>Daftar Chat</h3>
+    <div id="chatListBox"></div>
+    <button class="back" onclick="goBack()">⬅ Kembali</button>
+</div>
+
+<!-- CHAT -->
+<div class="container hidden" id="chatPage">
+    <h3>Chat</h3>
+    <div class="chat-box" id="chatBox"></div>
+    <input id="chatInput" placeholder="Ketik pesan..." onkeydown="if(event.key==='Enter') sendMessage()">
+
+    <!-- PANEL PENYEDIA -->
+    <div id="adminPanel" class="hidden">
+        <input id="hargaInput" type="number" placeholder="Masukkan harga">
+        <button onclick="setHarga()">💰 Set Harga</button>
+    </div>
+
+    <!-- PANEL PENCAri -->
+    <button id="requestBtn" onclick="requestJasa()" class="hidden">📩 Minta Jasa</button>
+
+    <!-- NAV & ACTION -->
+    <button class="back" onclick="goBack()">⬅ Kembali</button>
+    <button id="payBtn" onclick="lanjutPembayaran()" class="hidden">💳 Lanjutkan ke Pembayaran</button>
+    <button id="clearBtn" onclick="hapusChat()" class="danger">🗑 Bersihkan Chat</button>
+</div>
+
+<!-- PEMBAYARAN -->
+<div class="container hidden" id="paymentPage">
+    <h3>Pembayaran</h3>
+    <h2 id="totalHarga"></h2>
+    <p>Status: <b id="paymentStatus">⏳ Menunggu Pembayaran</b></p>
+    <p>💳 Transfer Bank / 📱 QRIS</p>
+    <button onclick="bayar()">Bayar Sekarang</button>
+    <button class="back" onclick="goBack()">⬅ Kembali</button>
+</div>
+
+
+<!-- RIWAYAT TRANSAKSI -->
+<div class="container hidden" id="historyPage">
+    <h3>Riwayat Transaksi</h3>
+    <div id="historyList"></div>
+    <button class="back" onclick="goBack()">⬅ Kembali</button>
+</div>
+
+<!-- PROFIL -->
+<div class="container hidden" id="profilePage">
+    <h3>Profil</h3>
+    <p>Username: <span id="pUsername"></span></p>
+    <p>Prodi: <span id="pProdi"></span></p>
+    <p>Angkatan: <span id="pAngkatan"></span></p>
+    <p>Role: <span id="pRole"></span></p>
+    <button class="back" onclick="goBack()">⬅ Kembali</button>
+</div>
+
+<script>
+let history=[], chatKey="", harga=null;
+
+/* NAV */
+function navigate(id){
+    history.push(id);
+    document.querySelectorAll('.container').forEach(c=>c.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+}
+function goBack(){
+    history.pop();
+    navigate(history.pop()||"dashboard");
+}
+
+/* USER */
+function getUsers(){ return JSON.parse(localStorage.getItem("users")||"[]"); }
+function register(){
+    const u=getUsers();
+    u.push({
+        username:regUsername.value,
+        password:regPassword.value,
+        prodi:regProdi.value,
+        angkatan:regAngkatan.value,
+        role:regRole.value
+    });
+    localStorage.setItem("users",JSON.stringify(u));
+    alert("Akun dibuat");
+    goBack();
+}
+function login(){
+    let user=getUsers().find(u=>u.username===loginUsername.value&&u.password===loginPassword.value);
+    if(!user) return alert("Login gagal");
+    localStorage.setItem("activeUser",JSON.stringify(user));
+    navigate("dashboard");
+}
+
+/* PAGE */
+function showRegister(){navigate("registerPage")}
+function showAcara(){navigate("acaraPage"); loadProviderList();}
+function showChatList(){loadChatList(); navigate("chatListPage");}
+
+/* LOAD PROVIDER LIST */
+function loadProviderList(){
+    const users = getUsers().filter(u=>u.role==="penyedia");
+    const listDiv = document.getElementById("providerList");
+    listDiv.innerHTML = "";
+
+    users.forEach(u=>{
+        const d = document.createElement("div");
+        d.textContent = u.username + " (Prodi: "+u.prodi+")";
+        d.style.padding="8px"; d.style.border="1px solid #ccc"; d.style.margin="5px 0"; d.style.cursor="pointer";
+        d.onclick = ()=> {
+            listDiv.querySelectorAll("div").forEach(el=>el.style.backgroundColor="white");
+            d.style.backgroundColor="#d1e7fd";
+            listDiv.setAttribute("data-selected", u.username);
+        };
+        listDiv.appendChild(d);
+    });
+}
+
+/* START CHAT DARI PROVIDER */
+function startChatWithProvider(){
+    const selected = document.getElementById("providerList").getAttribute("data-selected");
+    if(!selected) return alert("Pilih penyedia terlebih dahulu");
+
+    const u = JSON.parse(localStorage.getItem("activeUser"));
+    chatKey = "chat_"+u.username+"_"+selected+"_"+document.getElementById("acara").value+"_"+document.getElementById("jasa").value;
+    localStorage.setItem("lastChatKey", chatKey);
+    showChat();
+}
+
+/* CHAT LIST */
+function loadChatList(){
+    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
+    const chatListBox = document.getElementById("chatListBox");
+    chatListBox.innerHTML = "";
+
+    let keys = Object.keys(localStorage).filter(k=>k.startsWith("chat_"));
+    keys.forEach(key=>{
+        const chats = JSON.parse(localStorage.getItem(key)||"[]");
+        if(chats.length===0) return;
+
+        const parts = key.split("_");
+        const pencari = parts[1];
+        const penyedia = parts[2];
+
+        let otherUser="";
+        if(activeUser.role==="pencari") otherUser = penyedia;
+        if(activeUser.role==="penyedia") otherUser = pencari;
+
+        const lastMsg = chats[chats.length-1];
+        const d = document.createElement("div");
+        d.className="chat-list-item";
+        d.innerHTML=`<b>${otherUser}</b><br><span>${lastMsg.text}</span>`;
+        d.onclick=()=>{
+            chatKey=key;
+            localStorage.setItem("lastChatKey", chatKey);
+            showChat();
+        };
+        chatListBox.appendChild(d);
+    });
+
+    if(chatListBox.innerHTML==="") chatListBox.innerHTML="<p>Belum ada chat.</p>";
+}
+
+/* CHAT PAGE */
+function showChat(){
+    const lastKey = localStorage.getItem("lastChatKey");
+    if(lastKey) chatKey = lastKey;
+    loadChat();
+    navigate("chatPage");
+
+    const u=JSON.parse(localStorage.getItem("activeUser"));
+    updateChatPageUI(u);
+}
+
+function updateChatPageUI(u){
+    const isPenyedia = u.role==="penyedia";
+    const isPencari = u.role==="pencari";
+
+    adminPanel.classList.toggle("hidden",!isPenyedia);
+    payBtn.classList.toggle("hidden",!(isPencari && localStorage.getItem("harga_"+chatKey)));
+    requestBtn.classList.toggle("hidden", !isPencari);
+    clearBtn.classList.remove("hidden");
+
+    cekRequest();
+}
+
+/* CHAT FUNCTIONS */
+function loadChat(){
+    chatBox.innerHTML="";
+    const chats=JSON.parse(localStorage.getItem(chatKey)||"[]");
+    const u=JSON.parse(localStorage.getItem("activeUser"));
+    chats.forEach(c=>{
+        const d=document.createElement("div");
+        d.className="msg "+(c.sender===u.username?"me":"other");
+        d.innerHTML=`${c.text}<div class="time">${c.time}</div>`;
+        chatBox.appendChild(d);
+    });
+    chatBox.scrollTop=chatBox.scrollHeight;
+}
+
+function sendMessage(){
+    if(!chatInput.value) return;
+    const chats=JSON.parse(localStorage.getItem(chatKey)||"[]");
+    const u=JSON.parse(localStorage.getItem("activeUser"));
+    chats.push({ sender:u.username, text:chatInput.value, time:new Date().toLocaleTimeString().slice(0,5) });
+    localStorage.setItem(chatKey,JSON.stringify(chats));
+    chatInput.value="";
+    loadChat();
+}
+
+function hapusChat(){
+    if(confirm("Hapus semua chat?")){
+        localStorage.removeItem(chatKey);
+        loadChat();
+    }
+}
+
+/* PAYMENT */
+function setHarga(){
+    harga=hargaInput.value;
+    if(!harga) return alert("Masukkan harga terlebih dahulu");
+    localStorage.setItem("harga_"+chatKey,harga);
+    alert("Harga diset: Rp "+harga);
+}
+
+function lanjutPembayaran(){
+    if(!harga) harga = localStorage.getItem("harga_"+chatKey);
+    if(!harga) return alert("Harga belum diset penyedia");
+    totalHarga.innerText="Rp "+harga;
+    navigate("paymentPage");
+}
+
+function bayar(){
+    alert("Pembayaran berhasil!");
+}
+
+/* REQUEST JASA */
+function requestJasa(){
+    const u = JSON.parse(localStorage.getItem("activeUser"));
+    if(u.role !== "pencari") return;
+
+    let requests = JSON.parse(localStorage.getItem("requests")||"[]");
+    requests.push({ from: u.username, chatKey: chatKey, time: new Date().toLocaleTimeString().slice(0,5) });
+    localStorage.setItem("requests", JSON.stringify(requests));
+    alert("Permintaan jasa terkirim ke penyedia!");
+    cekRequest();
+}
+
+function cekRequest(){
+    const u = JSON.parse(localStorage.getItem("activeUser"));
+    if(u.role !== "penyedia") return;
+
+    let requests = JSON.parse(localStorage.getItem("requests")||"[]");
+    const pending = requests.filter(r => r.chatKey===chatKey);
+    if(pending.length>0){
+        alert(`Ada ${pending.length} permintaan jasa baru dari seseorang!`);
+    }
+}
+
+/* PROFILE */
+function showProfile(){
+    const u=JSON.parse(localStorage.getItem("activeUser"));
+    pUsername.innerText=u.username;
+    pProdi.innerText=u.prodi;
+    pAngkatan.innerText=u.angkatan;
+    pRole.innerText=u.role;
+    navigate("profilePage");
+}
+function logout(){
+    localStorage.removeItem("activeUser"); 
+    alert("Anda telah keluar.");         
+    navigate("loginPage");               
+}
+/* ===== STATUS & RIWAYAT TRANSAKSI ===== */
+
+function lanjutPembayaran(){
+    const h = localStorage.getItem('harga_'+chatKey);
+    totalHarga.innerText = 'Rp ' + h;
+
+    // Set status awal
+    localStorage.setItem('status_'+chatKey, 'Menunggu Pembayaran');
+    paymentStatus.innerText = '⏳ Menunggu Pembayaran';
+
+    navigate('paymentPage');
+}
+
+function bayar(){
+    // Update status
+    localStorage.setItem('status_'+chatKey, 'Lunas');
+    paymentStatus.innerText = '✅ Lunas';
+
+    // Simpan ke riwayat
+    let history = JSON.parse(localStorage.getItem('transactions') || '[]');
+    history.push({
+        chatKey: chatKey,
+        harga: localStorage.getItem('harga_'+chatKey),
+        status: 'Lunas',
+        waktu: new Date().toLocaleString()
+    });
+    localStorage.setItem('transactions', JSON.stringify(history));
+
+    alert('Pembayaran berhasil ✅');
+}
+
+function loadHistory(){
+    const list = document.getElementById('historyList');
+    list.innerHTML = '';
+
+    const history = JSON.parse(localStorage.getItem('transactions') || '[]');
+
+    if(history.length === 0){
+        list.innerHTML = '<p>Belum ada transaksi.</p>';
+        return;
+    }
+
+    history.forEach(h=>{
+        const d = document.createElement('div');
+        d.style.border='1px solid #ccc';
+        d.style.padding='10px';
+        d.style.margin='8px 0';
+        d.innerHTML = `
+            <b>Chat:</b> ${h.chatKey}<br>
+            <b>Harga:</b> Rp ${h.harga}<br>
+            <b>Status:</b> ${h.status}<br>
+            <small>${h.waktu}</small>
+        `;
+        list.appendChild(d);
+    });
+}
+
+</script>
+</body>
+</html>
